@@ -8,25 +8,37 @@ function openApp()
 	end
 end
 
+--关闭支付宝
+function shutApp()
+	r=0
+	while r==0 do
+		r = closeApp("com.eg.android.AlipayGphone")
+		--		toast("关闭支付宝")
+	end
+end
+
 --进入蚂蚁森林主页
 function enterAntForestPage()
-	while not findAntForestIcon() do
-		findAntForestIcon()
-	end
-	keepScreen(true)
-	x,y = findAntForestIcon()
-	tap(x,y)
-	keepScreen(false)
-	i = 1
-	while ( not findTreeLeaf() ) and i<3 do
-		mSleep(5000)
-		if findAntForestIcon() then
-			keepScreen(true)
-			x,y = findAntForestIcon()
-			tap(x,y)
-			keepScreen(false)
+	if  findAntForestIcon() then
+		keepScreen(true)
+		x,y = findAntForestIcon()
+		tap(x,y)
+		keepScreen(false)
+	else
+		i = 1
+		while (not findAntForestIcon()) and (i<3) do
+			mSleep(5000)
+			if findAntForestIcon() then
+				keepScreen(true)
+				x,y = findAntForestIcon()
+				tap(x,y)
+				keepScreen(false)
+			end
+			i = i+1
 		end
-		i = i+1
+		if i ==3 then
+			GlobalFlage = false
+		end
 	end
 end
 
@@ -94,6 +106,26 @@ function enterRank()
 		end
 		i = i+1
 	end
+	if i ==3 then
+		GlobalFlage = false
+	end
+end
+
+--页面进入检测、采集
+function enterPageDetect()
+	flage = false
+	t1 = timer()
+	while (not findTreeLeaf()) and (not flage) do
+		findTreeLeaf()
+		while ( (timer()-t1) > 10 ) do
+			if ( (timer()-t1) > 20 ) then
+				flage = true
+				break
+			end
+		end
+	end
+	collect()
+	--	pressKey('BACK',false)
 end
 
 --进入好友排行榜页面来回检测，若发现可收取或可代收的页面则点进去收取
@@ -104,22 +136,7 @@ function enterOthers()
 		while findHand() do
 			x,y = findHand()
 			tap(x,y)
-			
-			t1 = timer()
-			while (not findTreeLeaf() ) do
-				findTreeLeaf()
-				while ( (timer()-t1) > 10 ) do
-					if ( (timer()-t1) >20 ) then
-						break
-					end
-					collect()
-				end
-			end
-			
---			while not findTreeLeaf() do
---				findTreeLeaf()
---			end
-			collect()
+			enterPageDetect()
 			pressKey('BACK',false)
 			while not findFriendsRank() do
 				findFriendsRank()
@@ -129,24 +146,7 @@ function enterOthers()
 		while findHeart() do
 			x,y = findHeart()
 			tap(x,y)
-			
-			t1 = timer()
-			while (not findTreeLeaf() ) do
-				findTreeLeaf()
-				while ( (timer()-t1) > 10 ) do
-					if ( (timer()-t1) >20 ) then
-						break
-					end
-					collect()
-				end
-			end
-			
-			
-			
---			while not findTreeLeaf() do
---				findTreeLeaf()
---			end
-			collect()
+			enterPageDetect()
 			pressKey('BACK',false)
 			while not findFriendsRank() do
 				findFriendsRank()
@@ -157,47 +157,17 @@ function enterOthers()
 	while findHand() do
 		x,y = findHand()
 		tap(x,y)
-		
-		t1 = timer()
-			while (not findTreeLeaf() ) do
-				findTreeLeaf()
-				while ( (timer()-t1) > 10 ) do
-					if ( (timer()-t1) >20 ) then
-						break
-					end
-					collect()
-				end
-			end
-		
---		while not findTreeLeaf() do
---			findTreeLeaf()
---		end
-		collect()
+		enterPageDetect()
 		pressKey('BACK',false)
 		while not findFriendsRank() do
 			findFriendsRank()
 		end
 	end
-		--当前屏幕中没有“手”之后，再找当前屏幕中所有的“心”
+	--当前屏幕中没有“手”之后，再找当前屏幕中所有的“心”
 	while findHeart() do
 		x,y = findHeart()
 		tap(x,y)
-		
-		t1 = timer()
-			while (not findTreeLeaf() ) do
-				findTreeLeaf()
-				while ( (timer()-t1) > 10 ) do
-					if ( (timer()-t1) >20 ) then
-						break
-					end
-					collect()
-				end
-			end
-		
---		while not findTreeLeaf() do
---			findTreeLeaf()
---		end
-		collect()
+		enterPageDetect()
 		pressKey('BACK',false)
 		while not findFriendsRank() do
 			findFriendsRank()
@@ -295,34 +265,35 @@ end
 
 function main()
 	while true do
-		enterAntForestPage()--进入蚂蚁森林主页
+		GlobalFlage = true
+		while GlobalFlage do
 		
-		-- 这里不能用循环次数来判定，否则每次进入循环都会因为不满足条件而退出循环，达不到强制收集能量的目的
-		t1 = timer()
-		while (not findTreeLeaf() ) do
-			findTreeLeaf()
-			while ( (timer()-t1) > 10 ) do
-				if ( (timer()-t1) >20 ) then
-					break
-				end
-				collect()
+			enterAntForestPage()--进入蚂蚁森林主页
+			if GlobalFlage == false then
+				break
 			end
+			
+			enterPageDetect()
+
+			enterRank()--进入好友排行榜
+			if GlobalFlage == false then
+				break
+			end
+			
+			enterOthers()--在好友排行榜页面检测是否有能量可收取，有的话就点击进去收取能量
+
+			pressKey('BACK',false)--翻页到好友排行榜页面末尾时，点击返回，回到蚂蚁森林首页
+			
+			mSleep(1000)--延时1000毫秒（即1秒）
+			
+			pressKey('BACK',false)--再点击返回，回到支付宝首页
+			
+			mSleep(5000)--延时5000毫秒（即5秒）
+			
 		end
-		
-		collect()--收集自己主页的能量
-		
-		enterRank()--进入好友排行榜
-		
-		enterOthers()--在好友排行榜页面检测是否有能量可收取，有的话就点击进去收取能量
-		
-		pressKey('BACK',false)--翻页到好友排行榜页面末尾时，点击返回，回到蚂蚁森林首页
-		
-		mSleep(1000)--延时1000毫秒（即1秒）
-		
-		pressKey('BACK',false)--再点击返回，回到支付宝首页
-		
-		mSleep(5000)--延时5000毫秒（即5秒）
-		
+		shutApp()--关闭支付宝
+		mSleep(3000)
+		openApp()--打开支付宝
 	end
 end
 
